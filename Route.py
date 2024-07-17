@@ -387,6 +387,46 @@ def toggle():
             return render_template('toggle.html', num_buttons=num_buttons, button_labels=button_labels, button_states=button_states)
 
 
+@app.route('/add', methods=['POST'])
+@login_required
+def add_button():
+    print("  393  ")
+    user = current_user
+    settings = ButtonSettings.query.filter_by(user_id=user.id).first()
+    
+    if not settings:
+        flash('No button settings found for the current user.', 'danger')
+        return jsonify({'error': 'No button settings found for the current user.'}), 404
+
+    data = request.get_json()
+    
+    new_button_label = data.get('buttonLabel')
+    print("402 new_button_label   ",new_button_label)
+    if not new_button_label:
+        flash('No button label provided.', 'danger')
+        return jsonify({'error': 'No button label provided.'}), 400
+
+    # Convert string representations of lists to actual lists
+    button_labels = ast.literal_eval(settings.button_labels)
+    button_states = ast.literal_eval(settings.button_states)
+
+    # Add the new button label and default state
+    button_labels.append(new_button_label)
+    button_states.append('off')
+    
+    print("416   new_button_label  ",new_button_label)
+    print(" 417 button_states ", button_states)
+    
+    # Update the settings object
+    settings.button_labels = str(button_labels)
+    settings.button_states = str(button_states)
+    settings.num_buttons += 1
+
+    db.session.commit()
+
+    flash('New button added successfully!', 'success')
+    return jsonify({'message': 'New button added successfully!', 'num_buttons': settings.num_buttons, 'button_labels': button_labels, 'button_states': button_states}), 200
+
 
 @app.route('/Pstate', methods=['GET', 'POST'])
 @login_required
